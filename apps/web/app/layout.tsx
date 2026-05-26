@@ -3,19 +3,23 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { GlobalProviders } from "~/providers/global";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
+import { Epilogue, Hanken_Grotesk, Space_Mono } from "next/font/google";
+
+const epilogue = Epilogue({
+  subsets: ["latin"],
+  variable: "--font-epilogue",
 });
 
-export const metadata: Metadata = {
-  title: "Streamyst",
-  description: "Media Forwarding",
-};
+const hankenGrotesk = Hanken_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-hanken",
+});
+
+const spaceMono = Space_Mono({
+  subsets: ["latin"],
+  variable: "--font-space-mono",
+  weight: ["400", "700"],
+});
 
 export default function RootLayout({
   children,
@@ -24,7 +28,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body className={`
+          ${epilogue.variable}
+          ${hankenGrotesk.variable}
+          ${spaceMono.variable}
+        `}>
         <GlobalProviders>{children}</GlobalProviders>
       </body>
     </html>
