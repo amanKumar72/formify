@@ -26,7 +26,7 @@ export const getLoggedInUserInfoOutput = z.object({
 }
 )
 
-export const signOutInputModel = z.undefined()
+export const signOutInputModel = z.object({})
 export const signOutOutputModel = z.object({
   success: z.boolean().describe("Whether the user was signed out"),
 })
