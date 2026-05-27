@@ -1,13 +1,25 @@
 {
   "functions": {
-    "api/index.ts": {
+    "api/[...path].ts": {
       "maxDuration": 30
     }
   },
   "rewrites": [
     {
-      "source": "/(.*)",
-      "destination": "/api/index"
+      "source": "/trpc/:path*",
+      "destination": "/api/trpc/:path*"
+    },
+    {
+      "source": "/health",
+      "destination": "/api/health"
+    },
+    {
+      "source": "/openapi.json",
+      "destination": "/api/openapi.json"
+    },
+    {
+      "source": "/docs/:path*",
+      "destination": "/api/docs/:path*"
     }
   ]
 }

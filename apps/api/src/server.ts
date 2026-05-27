@@ -28,21 +28,29 @@ app.use(
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 
-app.get("/", (req, res) => {
+app.get(["/", "/api"], (req, res) => {
   return res.json({ message: "Formify is up and running..." });
 });
 
-app.get("/health", (req, res) => {
+app.get(["/health", "/api/health"], (req, res) => {
   return res.json({ message: "Formify server is healthy", healthy: true });
 });
 
 logger.debug(`openapi.json: ${env.BASE_URL}/openapi.json`);
-app.get("/openapi.json", (req, res) => {
+app.get(["/openapi.json", "/api/openapi.json"], (req, res) => {
   return res.json(openApiDocument);
 });
 
 logger.debug(`docs: ${env.BASE_URL}/docs`);
-app.use("/docs", apiReference({ url: "/openapi.json" }));
+app.use(["/docs", "/api/docs"], apiReference({ url: "/openapi.json" }));
+
+app.use(
+  "/api/trpc",
+  trpcExpress.createExpressMiddleware({
+    router: serverRouter,
+    createContext,
+  }),
+);
 
 app.use(
   "/api",
