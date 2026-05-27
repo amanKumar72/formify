@@ -1,24 +1,35 @@
-import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { GlobalProviders } from "~/providers/global";
 
-import { Epilogue, Hanken_Grotesk, Space_Mono } from "next/font/google";
+const geistSans = localFont({
+  src: "./fonts/GeistVF.woff",
+  variable: "--font-geist-sans",
+  weight: "100 900",
+});
 
-const epilogue = Epilogue({
-  subsets: ["latin"],
+const geistMono = localFont({
+  src: "./fonts/GeistMonoVF.woff",
+  variable: "--font-geist-mono",
+  weight: "100 900",
+});
+
+const epilogue = localFont({
+  src: "./fonts/GeistVF.woff",
   variable: "--font-epilogue",
+  weight: "100 900",
 });
 
-const hankenGrotesk = Hanken_Grotesk({
-  subsets: ["latin"],
+const hankenGrotesk = localFont({
+  src: "./fonts/GeistVF.woff",
   variable: "--font-hanken",
+  weight: "100 900",
 });
 
-const spaceMono = Space_Mono({
-  subsets: ["latin"],
+const spaceMono = localFont({
+  src: "./fonts/GeistMonoVF.woff",
   variable: "--font-space-mono",
-  weight: ["400", "700"],
+  weight: "100 900",
 });
 
 export default function RootLayout({
@@ -28,11 +39,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`
+      <body
+        className={`
+          ${geistSans.variable}
+          ${geistMono.variable}
           ${epilogue.variable}
           ${hankenGrotesk.variable}
           ${spaceMono.variable}
-        `}>
+        `}
+      >
         <GlobalProviders>{children}</GlobalProviders>
       </body>
     </html>
