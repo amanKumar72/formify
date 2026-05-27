@@ -6,6 +6,7 @@
     "start": "node dist/index.js",
     "dev": "dotenv -- tsx watch ./src/index.ts",
     "build": "tsup",
+    "vercel-build": "cd ../.. && pnpm build --filter @repo/api",
     "lint": "eslint src/*"
   },
   "devDependencies": {
