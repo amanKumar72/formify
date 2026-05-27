@@ -1,8 +1,9 @@
 "use client";
 
 import { FileUp } from "lucide-react";
-import type { FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import type { BuilderField } from "~/components/form-builder";
+import type { SubmittedFormField, UploadedFileValue } from "~/lib/file-upload";
 
 type FormRendererProps = {
   title: string;
@@ -10,7 +11,8 @@ type FormRendererProps = {
   fields: BuilderField[];
   submitLabel?: string;
   isSubmitting?: boolean;
-  onSubmit?: (data: Array<{ labelKey: string; value: string }>) => Promise<void> | void;
+  onSubmit?: (data: SubmittedFormField[]) => Promise<void> | void;
+  onFileUpload?: (file: File, field: BuilderField) => Promise<UploadedFileValue>;
 };
 
 const getLabelKey = (label: string) =>
@@ -27,8 +29,10 @@ export const FormRenderer = ({
   submitLabel = "Submit",
   isSubmitting = false,
   onSubmit,
+  onFileUpload,
 }: FormRendererProps) => {
   const sortedFields = [...fields].sort((first, second) => first.order - second.order);
+  const [selectedFiles, setSelectedFiles] = useState<Record<string, string>>({});
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -38,21 +42,36 @@ export const FormRenderer = ({
     }
 
     const formData = new FormData(event.currentTarget);
-    const submittedData = sortedFields.map((field) => {
-      const value = formData.get(field.id);
+    const submittedData = await Promise.all(
+      sortedFields.map(async (field) => {
+        const value = formData.get(field.id);
 
-      if (value instanceof File) {
+        if (value instanceof File) {
+          if (value.size === 0) {
+            return {
+              labelKey: getLabelKey(field.label),
+              value: "",
+            };
+          }
+
+          if (!onFileUpload) {
+            throw new Error("File uploads are not available");
+          }
+
+          const uploadedFile = await onFileUpload(value, field);
+
+          return {
+            labelKey: getLabelKey(field.label),
+            value: uploadedFile,
+          };
+        }
+
         return {
           labelKey: getLabelKey(field.label),
-          value: value.name,
+          value: value?.toString() ?? "",
         };
-      }
-
-      return {
-        labelKey: getLabelKey(field.label),
-        value: value?.toString() ?? "",
-      };
-    });
+      }),
+    );
 
     await onSubmit(submittedData);
   };
@@ -71,7 +90,13 @@ export const FormRenderer = ({
             {field.description && (
               <p className="mb-2 text-sm text-on-surface-variant">{field.description}</p>
             )}
-            <RenderedField field={field} />
+            <RenderedField
+              field={field}
+              selectedFilename={selectedFiles[field.id]}
+              onSelectedFileChange={(filename) =>
+                setSelectedFiles((current) => ({ ...current, [field.id]: filename }))
+              }
+            />
           </div>
         ))}
         {onSubmit && (
@@ -91,11 +116,25 @@ export const FormRenderer = ({
 const inputClass =
   "w-full rounded-lg border border-white/10 bg-surface-container px-4 py-3 text-foreground outline-none placeholder:text-on-surface-variant/60 focus:border-primary";
 
-const RenderedField = ({ field }: { field: BuilderField }) => {
+const RenderedField = ({
+  field,
+  selectedFilename,
+  onSelectedFileChange,
+}: {
+  field: BuilderField;
+  selectedFilename?: string;
+  onSelectedFileChange: (filename: string) => void;
+}) => {
   if (field.type === "checkbox") {
     return (
       <label className="flex items-center gap-3 rounded-lg border border-white/10 bg-surface-container px-4 py-3 text-on-surface-variant">
-        <input name={field.id} type="checkbox" value="true" className="size-4 accent-primary" />
+        <input
+          name={field.id}
+          type="checkbox"
+          value="true"
+          required={field.required}
+          className="size-4 accent-primary"
+        />
         <span>{field.placeholder || "Checkbox option"}</span>
       </label>
     );
@@ -106,7 +145,13 @@ const RenderedField = ({ field }: { field: BuilderField }) => {
       <div className="grid gap-3">
         {field.options.map((option, index) => (
           <label key={`${field.id}-${index}`} className="flex items-center gap-3">
-            <input name={field.id} type="radio" value={option} className="size-4 accent-primary" />
+            <input
+              name={field.id}
+              type="radio"
+              value={option}
+              required={field.required}
+              className="size-4 accent-primary"
+            />
             <span className="text-on-surface-variant">{option}</span>
           </label>
         ))}
@@ -116,7 +161,7 @@ const RenderedField = ({ field }: { field: BuilderField }) => {
 
   if (field.type === "select") {
     return (
-      <select name={field.id} className={inputClass} defaultValue="">
+      <select name={field.id} className={inputClass} defaultValue="" required={field.required}>
         <option value="" disabled>
           {field.placeholder || "Select an option"}
         </option>
@@ -134,7 +179,19 @@ const RenderedField = ({ field }: { field: BuilderField }) => {
       <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-white/20 bg-surface-container px-4 py-6 text-center text-on-surface-variant transition-colors hover:border-primary/40 hover:text-primary">
         <FileUp className="mb-2 size-6" />
         <span>{field.placeholder || "Upload a file"}</span>
-        <input name={field.id} type="file" className="sr-only" />
+        {selectedFilename && (
+          <span className="mt-2 max-w-full truncate text-sm text-foreground">
+            {selectedFilename}
+          </span>
+        )}
+        <input
+          name={field.id}
+          type="file"
+          accept="image/*,application/pdf"
+          required={field.required}
+          className="sr-only"
+          onChange={(event) => onSelectedFileChange(event.currentTarget.files?.[0]?.name ?? "")}
+        />
       </label>
     );
   }
@@ -143,6 +200,7 @@ const RenderedField = ({ field }: { field: BuilderField }) => {
     <input
       name={field.id}
       type={field.type}
+      required={field.required}
       className={inputClass}
       placeholder={field.placeholder}
     />

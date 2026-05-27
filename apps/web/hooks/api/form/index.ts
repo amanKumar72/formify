@@ -160,3 +160,13 @@ export const useSubmitForm = () => {
     submitFormAsync: mutation.mutateAsync,
   };
 };
+
+export const useUploadSubmissionFile = () => {
+  const mutation = trpc.form.uploadSubmissionFile.useMutation();
+
+  return {
+    ...mutation,
+    uploadSubmissionFile: mutation.mutate,
+    uploadSubmissionFileAsync: mutation.mutateAsync,
+  };
+};

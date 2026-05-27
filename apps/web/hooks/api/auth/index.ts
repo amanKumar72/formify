@@ -61,7 +61,6 @@ export const useSignIn = () => {
 };
 
 export const useSignOut = () => {
-  const utils = trpc.useUtils();
   const {
     mutate: signOut,
     mutateAsync: signOutAsync,
@@ -72,7 +71,7 @@ export const useSignOut = () => {
     isSuccess,
     reset,
     status,
-  } = trpc.auth.signOut.useMutation()
+  } = trpc.auth.signOut.useMutation();
   return {
     signOut,
     signOutAsync,
@@ -83,6 +82,21 @@ export const useSignOut = () => {
     isSuccess,
     reset,
     status,
+  };
+};
+
+export const useUpdateProfileImage = () => {
+  const utils = trpc.useUtils();
+  const mutation = trpc.auth.updateProfileImage.useMutation({
+    onSuccess: async () => {
+      await utils.auth.getLoggedInUserInfo.invalidate();
+    },
+  });
+
+  return {
+    ...mutation,
+    updateProfileImage: mutation.mutate,
+    updateProfileImageAsync: mutation.mutateAsync,
   };
 };
 

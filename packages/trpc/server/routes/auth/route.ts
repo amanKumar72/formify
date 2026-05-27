@@ -1,5 +1,5 @@
 import { loginUserWithEmailAndPasswordInput } from "@repo/services/user/model";
-import { userService } from "../../services";
+import { cloudinaryUploadService, userService } from "../../services";
 import { authenticatedProcedure, publicProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
 import {
@@ -11,6 +11,8 @@ import {
   loginUserWithEmailAndPasswordOutputModel,
   signOutInputModel,
   signOutOutputModel,
+  updateProfileImageInputModel,
+  updateProfileImageOutputModel,
 } from "./model";
 import { clearAuthenticationCookie, setAuthenticationCookie } from "../../utils/cookie";
 
@@ -94,6 +96,32 @@ export const authRouter = router({
       clearAuthenticationCookie(ctx);
       return {
         success: true,
+      };
+    }),
+  updateProfileImage: authenticatedProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: getPath("/profile-image"),
+        tags: TAGS,
+        summary: "Update the logged in user's profile image",
+        protect: true,
+      },
+    })
+    .input(updateProfileImageInputModel)
+    .output(updateProfileImageOutputModel)
+    .mutation(async ({ ctx, input }) => {
+      const uploadedFile = await cloudinaryUploadService.uploadFile({
+        dataUrl: input.dataUrl,
+        filename: input.filename,
+        folder: `users/${ctx.user.id}/profile`,
+      });
+
+      await userService.updateProfileImage(ctx.user.id, uploadedFile.url);
+
+      return {
+        url: uploadedFile.url,
+        publicId: uploadedFile.publicId,
       };
     }),
 });

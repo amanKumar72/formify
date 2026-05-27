@@ -1,4 +1,9 @@
-import { formFieldService, formService, formSubmissionService, userService } from "../../services";
+import {
+  cloudinaryUploadService,
+  formFieldService,
+  formService,
+  formSubmissionService,
+} from "../../services";
 import { authenticatedProcedure, publicProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
 import {
@@ -25,6 +30,8 @@ import {
   getAllFormSubmissionsOutputModel,
   submitFormInputModel,
   submitFormOutputModel,
+  uploadSubmissionFileInputModel,
+  uploadSubmissionFileOutputModel,
   getAllSubmissionsInputModel,
 } from "./model";
 
@@ -268,7 +275,7 @@ export const formRouter = router({
     .output(deleteFormFieldOutputModel)
     .mutation(async ({ ctx, input }) => {
       const { fieldId, id: formId } = input;
-      console.log("In procedure ",fieldId, formId)
+      console.log("In procedure ", fieldId, formId);
       const { success } = await formFieldService.deleteFormField(formId, ctx.user.id, fieldId);
       return {
         success,
@@ -365,6 +372,33 @@ export const formRouter = router({
       });
       return {
         success,
+      };
+    }),
+  uploadSubmissionFile: publicProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: getPath("/:formId/submission-file"),
+        tags: TAGS,
+        summary: "Upload a file for a form submission",
+        protect: false,
+      },
+    })
+    .input(uploadSubmissionFileInputModel)
+    .output(uploadSubmissionFileOutputModel)
+    .mutation(async ({ input }) => {
+      await formService.getFormById(input.formId);
+      const uploadedFile = await cloudinaryUploadService.uploadFile({
+        dataUrl: input.dataUrl,
+        filename: input.filename,
+        folder: `forms/${input.formId}/submissions`,
+      });
+
+      return {
+        url: uploadedFile.url,
+        publicId: uploadedFile.publicId,
+        filename: uploadedFile.originalFilename,
+        resourceType: uploadedFile.resourceType,
       };
     }),
 });

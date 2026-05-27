@@ -4,7 +4,13 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import { FormRenderer } from "~/components/form-renderer";
-import { useGetFormById, useGetFormFields, useSubmitForm } from "~/hooks/api/form";
+import {
+  useGetFormById,
+  useGetFormFields,
+  useSubmitForm,
+  useUploadSubmissionFile,
+} from "~/hooks/api/form";
+import { fileToDataUrl, type SubmittedFormField } from "~/lib/file-upload";
 import { toBuilderField } from "~/lib/form-utils";
 
 const PublicFormPage = () => {
@@ -13,8 +19,9 @@ const PublicFormPage = () => {
   const { form, isLoading: isFormLoading } = useGetFormById(formId);
   const { formFields, isLoading: areFieldsLoading } = useGetFormFields(formId);
   const { submitFormAsync, isPending } = useSubmitForm();
+  const { uploadSubmissionFileAsync, isPending: isUploading } = useUploadSubmissionFile();
 
-  const handleSubmit = async (submittedData: Array<{ labelKey: string; value: string }>) => {
+  const handleSubmit = async (submittedData: SubmittedFormField[]) => {
     try {
       await submitFormAsync({
         id: formId,
@@ -29,6 +36,16 @@ const PublicFormPage = () => {
         position: "top-right",
       });
     }
+  };
+
+  const handleFileUpload = async (file: File) => {
+    const dataUrl = await fileToDataUrl(file);
+
+    return uploadSubmissionFileAsync({
+      formId,
+      dataUrl,
+      filename: file.name,
+    });
   };
 
   return (
@@ -47,8 +64,9 @@ const PublicFormPage = () => {
           title={form.title}
           description={form.description}
           fields={(formFields ?? []).map(toBuilderField)}
-          isSubmitting={isPending}
+          isSubmitting={isPending || isUploading}
           onSubmit={handleSubmit}
+          onFileUpload={handleFileUpload}
         />
       )}
     </main>

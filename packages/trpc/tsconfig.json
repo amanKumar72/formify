@@ -2,6 +2,6 @@
   "extends": ["@repo/typescript-config/node.json"],
   "include": ["server/", "client/"],
   "compilerOptions": {
-    "ignoreDeprecations": "6.0",
+    "ignoreDeprecations": "5.0"
   }
 }

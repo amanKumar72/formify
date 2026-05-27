@@ -1,5 +1,14 @@
 import z from "zod";
 
+export const uploadedFileValueModel = z.object({
+  url: z.string().url().describe("The uploaded file URL"),
+  publicId: z.string().describe("The Cloudinary public id"),
+  filename: z.string().describe("The original filename"),
+  resourceType: z.string().describe("The Cloudinary resource type"),
+});
+
+export const submittedFieldValueModel = z.union([z.string(), uploadedFileValueModel]);
+
 export const createFormInputModel = z.object({
   title: z.string().min(1).describe("The title of the form"),
   description: z.string().min(1).describe("The description of the form"),
@@ -161,7 +170,7 @@ export const submitFormInputModel = z.object({
     .array(
       z.object({
         labelKey: z.string().describe("The label key of the field"),
-        value: z.string().describe("The value of the field"),
+        value: submittedFieldValueModel.describe("The value of the field"),
       }),
     )
     .describe("The submitted data"),
@@ -169,5 +178,12 @@ export const submitFormInputModel = z.object({
 export const submitFormOutputModel = z.object({
   success: z.boolean().describe("Whether the form submission was submitted successfully"),
 });
+
+export const uploadSubmissionFileInputModel = z.object({
+  formId: z.string().describe("The unique identifier of the form"),
+  dataUrl: z.string().min(1).describe("The file data URL"),
+  filename: z.string().min(1).describe("The original filename"),
+});
+export const uploadSubmissionFileOutputModel = uploadedFileValueModel;
 
 export const getAllSubmissionsInputModel = z.undefined();
