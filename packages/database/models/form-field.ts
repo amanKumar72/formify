@@ -21,5 +21,5 @@ export const formFieldTable = pgTable("form_fields", {
   required: boolean("required").default(false),
   placeholder: varchar("placeholder", { length: 80 }),  
   description: varchar("description", { length: 255 }),
-  order: numeric("order").notNull(),
+  order: integer("order").default(0).notNull(),
 });

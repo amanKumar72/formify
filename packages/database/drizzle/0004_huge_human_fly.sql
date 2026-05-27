@@ -1,0 +1,1 @@
+ALTER TABLE "form_fields" ALTER COLUMN "order" SET DATA TYPE integer;

@@ -1,16 +1,7 @@
-import { formService, userService } from "../../services";
+import { formFieldService, formService, userService } from "../../services";
 import { authenticatedProcedure, publicProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
-import {
-  createFormInputModel,
-  createFormOutputModel,
-  deleteFormInputModel,
-  deleteFormOutputModel,
-  getFormInputModel,
-  getFormOutputModel,
-  updateFormInputModel,
-  updateFormOutputModel,
-} from "./model";
+import { createFormInputModel, createFormOutputModel, deleteFormInputModel, deleteFormOutputModel, getFormFieldsInputModel, getFormFieldsOutputModel, getFormInputModel, getFormOutputModel, updateFormInputModel, updateFormOutputModel, createFormFieldInputModel, createFormFieldOutputModel, updateFormFieldInputModel, updateFormFieldOutputModel, deleteFormFieldInputModel, deleteFormFieldOutputModel, getFormFieldInputModel, getFormFieldOutputModel, getFormFieldTypeOptionsOutputModel } from "./model";
 
 const TAGS = ["Form"];
 const getPath = generatePath("/form");
@@ -127,5 +118,137 @@ export const formRouter = router({
       const forms = await formService.getMyForms(ctx.user.id);
       return forms;
     }),
-
+    getFormFields: authenticatedProcedure
+    .meta({
+      openapi: {
+        method: "GET",
+        path: getPath("/:id/fields"),
+        tags: TAGS,
+        summary: "Get the form fields of a form",
+        protect: true,
+      },
+    })
+    .input(getFormFieldsInputModel)
+    .output(getFormFieldsOutputModel)
+    .query(
+      async ({ input }) => {
+        const { id: formId } = input;
+        const formFields = await formFieldService.getFormFields(formId);
+        return formFields;
+      },
+    ),
+    createFormField: authenticatedProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: getPath("/:id/fields"),
+        tags: TAGS,
+        summary: "Create a form field",
+        protect: true,
+      },
+    })
+    .input(createFormFieldInputModel)
+    .output(createFormFieldOutputModel)
+    .mutation(async ({ ctx, input }) => {
+      const { formId, label, type, placeholder, description, order, required } = input;
+      const { id } = await formFieldService.createFormField(
+        formId,
+        ctx.user.id,
+        {
+          label,
+          type,
+          placeholder: placeholder || "",
+          description: description || "",
+          required: required || false,
+          order: order || 0,
+        },
+      );
+      return {
+        id,
+      };
+    }),
+    updateFormField: authenticatedProcedure
+    .meta({
+      openapi: {
+        method: "PUT",
+        path: getPath("/:id/fields/:fieldId"),
+        tags: TAGS,
+        summary: "Update a form field",
+        protect: true,
+      },
+    })
+    .input(updateFormFieldInputModel)
+    .output(updateFormFieldOutputModel)
+    .mutation(async ({ ctx, input }) => {
+      const { formId, id:fieldId, label, type, placeholder, description, order, required } = input;
+      const field = await formFieldService.updateFormField(
+        formId,
+        ctx.user.id,
+        {
+          id: fieldId,
+          label,
+          type,
+          placeholder: placeholder || "",
+          description: description || "",
+          required: required || false,
+          order: order || 0,
+        },
+      );
+      return {
+        id: fieldId
+      };
+    }),
+    deleteFormField: authenticatedProcedure
+    .meta({
+      openapi: {
+        method: "DELETE",
+        path: getPath("/:id/fields/:fieldId"),
+        tags: TAGS,
+        summary: "Delete a form field",
+        protect: true,
+      },
+    })
+    .input(deleteFormFieldInputModel)
+    .output(deleteFormFieldOutputModel)
+    .mutation(async ({ ctx, input }) => {
+      const { id: formId, id:fieldId } = input;
+      const { success } = await formFieldService.deleteFormField(formId, ctx.user.id, fieldId);
+      return {
+        success,
+      };
+    }),
+    getFormField: authenticatedProcedure
+    .meta({
+      openapi: {
+        method: "GET",
+        path: getPath("/:id/fields/:fieldId"),
+        tags: TAGS,
+        summary: "Get a form field",
+        protect: true,
+      },
+    })
+    .input(getFormFieldInputModel)
+    .output(getFormFieldOutputModel)
+    .query(
+      async ({ input }) => {
+        const { id: formId,fieldId } = input;
+        const field = await formFieldService.getFormField(formId, fieldId);
+        return field;
+      },
+    ),
+    getFormFieldTypeOptions: publicProcedure
+    .meta({
+      openapi: {
+        method: "GET",
+        path: getPath("/:id/fields/type-options"),
+        tags: TAGS,
+        summary: "Get the form field type options",
+        protect: true,
+      },
+    })
+    .output(getFormFieldTypeOptionsOutputModel)
+    .query(async () => {
+      const typeOptions = await formFieldService.getFormFieldTypeOptions();
+      return typeOptions;
+    }),
 });

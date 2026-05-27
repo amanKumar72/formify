@@ -40,3 +40,70 @@ export const deleteFormInputModel = z.object({
 export const deleteFormOutputModel = z.object({
   success: z.boolean().describe("Whether the form was deleted successfully"),
 })
+
+export const getFormFieldsInputModel = z.object({
+  id: z.string().describe("The unique identifier of the form"),
+})
+export const getFormFieldsOutputModel = z.array(z.object({
+  id: z.string().describe("The unique identifier of the form field"),
+  formId: z.string().describe("The unique identifier of the form"),
+  label: z.string().describe("The label of the form field"),
+  labelKey: z.string().describe("The label key of the form field"),
+  type: z.string().describe("The type of the form field"),
+  placeholder: z.string().nullable().describe("The placeholder of the form field"),
+  description: z.string().nullable().describe("The description of the form field"),
+  order: z.number().nullable().default(0).describe("The order of the form field"),
+  required: z.boolean().nullable().default(false).describe("Whether the form field is required"),
+}))
+
+export const createFormFieldInputModel = z.object({
+  formId: z.string().describe("The unique identifier of the form"),
+  label: z.string().describe("The label of the form field"),
+  type: z.string().describe("The type of the form field"),
+  placeholder: z.string().nullable().describe("The placeholder of the form field"),
+  description: z.string().nullable().describe("The description of the form field"),
+  order: z.number().nullable().default(0).describe("The order of the form field"),
+  required: z.boolean().nullable().default(false).describe("Whether the form field is required"),
+})
+export const createFormFieldOutputModel = z.object({
+  id: z.string().describe("The unique identifier of the form field"),
+})
+
+export const updateFormFieldInputModel = z.object({
+  formId: z.string().describe("The unique identifier of the form"),
+  id: z.string().describe("The unique identifier of the form field"),
+  label: z.string().describe("The label of the form field"),
+  type: z.string().describe("The type of the form field"),
+  placeholder: z.string().nullable().describe("The placeholder of the form field"),
+  description: z.string().nullable().describe("The description of the form field"),
+  order: z.number().nullable().default(0).describe("The order of the form field"),
+  required: z.boolean().nullable().default(false).describe("Whether the form field is required"),
+})
+export const updateFormFieldOutputModel = z.object({
+  id: z.string().describe("The unique identifier of the form field"),
+})
+
+export const deleteFormFieldInputModel = z.object({
+  id: z.string().describe("The unique identifier of the form field"),
+})
+export const deleteFormFieldOutputModel = z.object({
+  success: z.boolean().describe("Whether the form field was deleted successfully"),
+})
+
+export const getFormFieldInputModel = z.object({
+  id: z.string().describe("The unique identifier of the form field"),
+  fieldId: z.string().describe("The unique identifier of the form field"),
+})
+export const getFormFieldOutputModel = z.object({
+  id: z.string().describe("The unique identifier of the form field"),
+  formId: z.string().describe("The unique identifier of the form"),
+  label: z.string().describe("The label of the form field"),
+  labelKey: z.string().describe("The label key of the form field"),
+  type: z.string().describe("The type of the form field"),
+  placeholder: z.string().nullable().describe("The placeholder of the form field"),
+  description: z.string().nullable().describe("The description of the form field"),
+  order: z.number().nullable().default(0).describe("The order of the form field"),
+  required: z.boolean().nullable().default(false).describe("Whether the form field is required"),
+})
+
+export const getFormFieldTypeOptionsOutputModel = z.array(z.string()).describe("The form field type options")
