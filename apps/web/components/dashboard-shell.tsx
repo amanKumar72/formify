@@ -1,6 +1,5 @@
 "use client";
 
-import { Eye, Palette, Share2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ReactNode, useEffect } from "react";
@@ -57,27 +56,6 @@ export const DashboardShell = ({ children, title = "Dashboard", action }: Dashbo
             <span className="hidden font-mono text-xs font-bold text-on-surface-variant lg:block">
               {title}
             </span>
-            <button
-              type="button"
-              className="hidden rounded-full p-2 text-on-surface-variant transition-colors hover:bg-white/5 hover:text-primary sm:inline-flex"
-              aria-label="Preview"
-            >
-              <Eye className="size-5" />
-            </button>
-            <button
-              type="button"
-              className="hidden rounded-full p-2 text-on-surface-variant transition-colors hover:bg-white/5 hover:text-primary sm:inline-flex"
-              aria-label="Theme"
-            >
-              <Palette className="size-5" />
-            </button>
-            <button
-              type="button"
-              className="hidden rounded-full p-2 text-on-surface-variant transition-colors hover:bg-white/5 hover:text-primary sm:inline-flex"
-              aria-label="Share"
-            >
-              <Share2 className="size-5" />
-            </button>
             {action}
             <UserMenu user={user} />
           </div>

@@ -34,7 +34,9 @@ export const DashboardSidebar = () => {
       <nav className="flex w-full flex-col gap-3">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href;
+          const isActive =
+            pathname === item.href ||
+            (item.href !== "/dashboard" && pathname.startsWith(`${item.href}/`));
 
           return (
             <Link

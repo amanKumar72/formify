@@ -3,35 +3,46 @@
 import { BarChart3, Clock, FileText, MousePointerClick } from "lucide-react";
 import Link from "next/link";
 import { DashboardShell } from "~/components/dashboard-shell";
-
-const stats = [
-  {
-    label: "Total Forms",
-    value: "12",
-    detail: "4 published",
-    icon: FileText,
-  },
-  {
-    label: "Responses",
-    value: "1,284",
-    detail: "+18% this week",
-    icon: BarChart3,
-  },
-  {
-    label: "Completion Rate",
-    value: "72%",
-    detail: "Across active forms",
-    icon: MousePointerClick,
-  },
-  {
-    label: "Avg. Time",
-    value: "2m 14s",
-    detail: "Per submission",
-    icon: Clock,
-  },
-];
+import { useGetAllFormSubmissions, useGetMyAllForms } from "~/hooks/api/form";
 
 const Dashboard = () => {
+  const { allForms } = useGetMyAllForms();
+  const { allSubmissions } = useGetAllFormSubmissions();
+
+  const formCount = allForms?.length ?? 0;
+  const submissionCount = allSubmissions?.length ?? 0;
+  const completionRate = formCount
+    ? Math.min(100, Math.round((submissionCount / formCount) * 12))
+    : 0;
+  const latestSubmission = allSubmissions?.[0]?.createdAt;
+
+  const stats = [
+    {
+      label: "Total Forms",
+      value: String(formCount),
+      detail: `${formCount} saved forms`,
+      icon: FileText,
+    },
+    {
+      label: "Responses",
+      value: String(submissionCount),
+      detail: "Total collected submissions",
+      icon: BarChart3,
+    },
+    {
+      label: "Activity Rate",
+      value: `${completionRate}%`,
+      detail: "Relative to active forms",
+      icon: MousePointerClick,
+    },
+    {
+      label: "Latest Response",
+      value: latestSubmission ? new Date(latestSubmission).toLocaleDateString() : "None",
+      detail: "Most recent submission",
+      icon: Clock,
+    },
+  ];
+
   return (
     <DashboardShell title="Dashboard Home">
       <main className="h-full overflow-y-auto p-6 md:p-8">
@@ -43,7 +54,7 @@ const Dashboard = () => {
                 Workspace analytics
               </h1>
               <p className="mt-3 max-w-2xl text-on-surface-variant">
-                A quick pulse on form activity, response quality, and conversion performance.
+                Live stats from your forms and submissions.
               </p>
             </div>
             <Link
@@ -78,28 +89,43 @@ const Dashboard = () => {
 
           <section className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_0.8fr]">
             <article className="rounded-xl border border-white/10 bg-white/5 p-6">
-              <h2 className="font-heading text-xl font-bold">Response trend</h2>
+              <h2 className="font-heading text-xl font-bold">Forms by responses</h2>
               <div className="mt-8 flex h-64 items-end gap-3">
-                {[32, 48, 38, 72, 64, 88, 76, 96].map((height, index) => (
-                  <div
-                    key={index}
-                    className="flex-1 rounded-t-lg bg-primary/80"
-                    style={{ height: `${height}%` }}
-                  />
-                ))}
+                {(allForms ?? []).slice(0, 8).map((form) => {
+                  const count =
+                    allSubmissions?.filter((submission) => submission.formId === form.id).length ??
+                    0;
+                  const height = submissionCount ? Math.max(8, (count / submissionCount) * 100) : 8;
+
+                  return (
+                    <div key={form.id} className="flex flex-1 flex-col items-center gap-2">
+                      <div
+                        className="w-full rounded-t-lg bg-primary/80"
+                        style={{ height: `${height}%` }}
+                      />
+                      <span className="max-w-full truncate text-xs text-on-surface-variant">
+                        {form.title}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </article>
             <article className="rounded-xl border border-white/10 bg-white/5 p-6">
-              <h2 className="font-heading text-xl font-bold">Recent activity</h2>
+              <h2 className="font-heading text-xl font-bold">Recent forms</h2>
               <div className="mt-6 space-y-4">
-                {["Lead form published", "18 new submissions", "Contact form edited"].map(
-                  (activity) => (
-                    <div key={activity} className="rounded-lg bg-surface-container p-4">
-                      <p className="font-body font-semibold text-foreground">{activity}</p>
-                      <p className="mt-1 text-sm text-on-surface-variant">Just now</p>
-                    </div>
-                  ),
-                )}
+                {(allForms ?? []).slice(0, 3).map((form) => (
+                  <Link
+                    key={form.id}
+                    href={`/dashboard/forms/${form.id}`}
+                    className="block rounded-lg bg-surface-container p-4 transition-colors hover:bg-surface-container-high"
+                  >
+                    <p className="font-body font-semibold text-foreground">{form.title}</p>
+                    <p className="mt-1 text-sm text-on-surface-variant">
+                      {form.createdAt ? new Date(form.createdAt).toLocaleDateString() : "No date"}
+                    </p>
+                  </Link>
+                ))}
               </div>
             </article>
           </section>

@@ -1,10 +1,68 @@
 import { formFieldService, formService, formSubmissionService, userService } from "../../services";
 import { authenticatedProcedure, publicProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
-import { createFormInputModel, createFormOutputModel, deleteFormInputModel, deleteFormOutputModel, getFormFieldsInputModel, getFormFieldsOutputModel, getFormInputModel, getFormOutputModel, updateFormInputModel, updateFormOutputModel, createFormFieldInputModel, createFormFieldOutputModel, updateFormFieldInputModel, updateFormFieldOutputModel, deleteFormFieldInputModel, deleteFormFieldOutputModel, getFormFieldInputModel, getFormFieldOutputModel, getFormFieldTypeOptionsOutputModel, getAllFormSubmissionsInputModel, getAllFormSubmissionsOutputModel, submitFormInputModel, submitFormOutputModel, getAllSubmissionsInputModel } from "./model";
+import {
+  createFormInputModel,
+  createFormOutputModel,
+  deleteFormInputModel,
+  deleteFormOutputModel,
+  getFormFieldsInputModel,
+  getFormFieldsOutputModel,
+  getFormInputModel,
+  getFormOutputModel,
+  updateFormInputModel,
+  updateFormOutputModel,
+  createFormFieldInputModel,
+  createFormFieldOutputModel,
+  updateFormFieldInputModel,
+  updateFormFieldOutputModel,
+  deleteFormFieldInputModel,
+  deleteFormFieldOutputModel,
+  getFormFieldInputModel,
+  getFormFieldOutputModel,
+  getFormFieldTypeOptionsOutputModel,
+  getAllFormSubmissionsInputModel,
+  getAllFormSubmissionsOutputModel,
+  submitFormInputModel,
+  submitFormOutputModel,
+  getAllSubmissionsInputModel,
+} from "./model";
 
 const TAGS = ["Form"];
 const getPath = generatePath("/form");
+const normalizeOption = (option: unknown) => {
+  if (typeof option === "string") {
+    try {
+      const parsed = JSON.parse(option) as unknown;
+      return typeof parsed === "string" ? parsed : option;
+    } catch {
+      return option;
+    }
+  }
+
+  if (typeof option === "number" || typeof option === "boolean") {
+    return String(option);
+  }
+
+  if (option && typeof option === "object") {
+    const record = option as Record<string, unknown>;
+    if (typeof record.label === "string") {
+      return record.label;
+    }
+    if (typeof record.value === "string") {
+      return record.value;
+    }
+  }
+
+  return null;
+};
+
+const normalizeFieldOptions = <T extends { options: unknown[] | null }>(field: T) => ({
+  ...field,
+  options: Array.isArray(field.options)
+    ? field.options.map(normalizeOption).filter((option): option is string => Boolean(option))
+    : [],
+});
 
 export const formRouter = router({
   createForm: authenticatedProcedure
@@ -118,7 +176,7 @@ export const formRouter = router({
       const forms = await formService.getMyForms(ctx.user.id);
       return forms;
     }),
-    getFormFields: publicProcedure
+  getFormFields: publicProcedure
     .meta({
       openapi: {
         method: "GET",
@@ -130,14 +188,12 @@ export const formRouter = router({
     })
     .input(getFormFieldsInputModel)
     .output(getFormFieldsOutputModel)
-    .query(
-      async ({ input }) => {
-        const { id: formId } = input;
-        const formFields = await formFieldService.getFormFields(formId);
-        return formFields;
-      },
-    ),
-    createFormField: authenticatedProcedure
+    .query(async ({ input }) => {
+      const { id: formId } = input;
+      const formFields = await formFieldService.getFormFields(formId);
+      return formFields.map(normalizeFieldOptions);
+    }),
+  createFormField: authenticatedProcedure
     .meta({
       openapi: {
         method: "POST",
@@ -150,24 +206,19 @@ export const formRouter = router({
     .input(createFormFieldInputModel)
     .output(createFormFieldOutputModel)
     .mutation(async ({ ctx, input }) => {
-      const { formId, label, type, placeholder, description, order, required } = input;
-      const { id } = await formFieldService.createFormField(
-        formId,
-        ctx.user.id,
-        {
-          label,
-          type,
-          placeholder: placeholder || "",
-          description: description || "",
-          required: required || false,
-          order: order || 0,
-        },
-      );
-      return {
-        id,
-      };
+      const { formId, label, type, placeholder, description, order, required, options } = input;
+      const field = await formFieldService.createFormField(formId, ctx.user.id, {
+        label,
+        type,
+        placeholder: placeholder || "",
+        description: description || "",
+        required: required || false,
+        order: order || 0,
+        options: options || [],
+      });
+      return normalizeFieldOptions(field);
     }),
-    updateFormField: authenticatedProcedure
+  updateFormField: authenticatedProcedure
     .meta({
       openapi: {
         method: "PUT",
@@ -180,25 +231,30 @@ export const formRouter = router({
     .input(updateFormFieldInputModel)
     .output(updateFormFieldOutputModel)
     .mutation(async ({ ctx, input }) => {
-      const { formId, id:fieldId, label, type, placeholder, description, order, required } = input;
-      const field = await formFieldService.updateFormField(
+      const {
         formId,
-        ctx.user.id,
-        {
-          id: fieldId,
-          label,
-          type,
-          placeholder: placeholder || "",
-          description: description || "",
-          required: required || false,
-          order: order || 0,
-        },
-      );
-      return {
-        id: fieldId
-      };
+        id: fieldId,
+        label,
+        type,
+        placeholder,
+        description,
+        order,
+        required,
+        options,
+      } = input;
+      const field = await formFieldService.updateFormField(formId, ctx.user.id, {
+        id: fieldId,
+        label,
+        type,
+        placeholder: placeholder || "",
+        description: description || "",
+        required: required || false,
+        order: order || 0,
+        options: options || [],
+      });
+      return normalizeFieldOptions(field);
     }),
-    deleteFormField: authenticatedProcedure
+  deleteFormField: authenticatedProcedure
     .meta({
       openapi: {
         method: "DELETE",
@@ -211,13 +267,14 @@ export const formRouter = router({
     .input(deleteFormFieldInputModel)
     .output(deleteFormFieldOutputModel)
     .mutation(async ({ ctx, input }) => {
-      const { id: formId, id:fieldId } = input;
+      const { fieldId, id: formId } = input;
+      console.log("In procedure ",fieldId, formId)
       const { success } = await formFieldService.deleteFormField(formId, ctx.user.id, fieldId);
       return {
         success,
       };
     }),
-    getFormField: authenticatedProcedure
+  getFormField: authenticatedProcedure
     .meta({
       openapi: {
         method: "GET",
@@ -229,14 +286,12 @@ export const formRouter = router({
     })
     .input(getFormFieldInputModel)
     .output(getFormFieldOutputModel)
-    .query(
-      async ({ input }) => {
-        const { id: formId,fieldId } = input;
-        const field = await formFieldService.getFormField(formId, fieldId);
-        return field;
-      },
-    ),
-    getFormFieldTypeOptions: publicProcedure
+    .query(async ({ input }) => {
+      const { id: formId, fieldId } = input;
+      const field = await formFieldService.getFormField(formId, fieldId);
+      return normalizeFieldOptions(field);
+    }),
+  getFormFieldTypeOptions: publicProcedure
     .meta({
       openapi: {
         method: "GET",
@@ -251,68 +306,65 @@ export const formRouter = router({
       const typeOptions = await formFieldService.getFormFieldTypeOptions();
       return typeOptions;
     }),
-    getFormSubmissions: authenticatedProcedure
-      .meta({
-        openapi: {
-          method: "GET",
-          path: getPath("/:id/submissions"),
-          tags: TAGS,
-          summary: "Get the form submissions of a form",
-          protect: true,
-        },
-      })
-      .input(getAllSubmissionsInputModel)
-      .output(getAllFormSubmissionsOutputModel)
-      .query(
-        async ({ ctx }) => {
-          const submissions = await formSubmissionService.getAllFormSubmissions(ctx.user.id);
-          return submissions;
-        },
-      ),
-    getFormSubmissionsByFormId: authenticatedProcedure
-      .meta({
-        openapi: {
-          method: "GET",
-          path: getPath("/:id/:formId/submissions"),
-          tags: TAGS,
-          summary: "Get the form submissions of a form",
-          protect: true,
-        },
-      })
-      .input(getAllFormSubmissionsInputModel)
-      .output(getAllFormSubmissionsOutputModel)
-      .query(
-        async ({ ctx, input }) => {
-          const { id: formId } = input;
-          const submissions = await formSubmissionService.getAllFormSubmissionsByFormId(formId, ctx.user.id);
-          return submissions;
-        },
-      ),
-      submitForm: publicProcedure
-      .meta({
-        openapi: {
-          method: "POST",
-          path: getPath("/:id/submit"),
-          tags: TAGS,
-          summary: "Submit a form",
-          protect: false,
-        },
-      })
-      .input(submitFormInputModel)
-      .output(submitFormOutputModel)
-      .mutation(async ({ ctx, input }) => {
-        const { id: formId, submittedData } = input;
-        const { success } = await formSubmissionService.submitFormByUser(
-          {
-            formId,
-            userId: ctx.user?.id || null,
-            ip: ctx.ip || "",
-            userAgent: ctx.userAgent || "",
-            submittedData,
-          },
-        );
-        return {
-          success,
-        };
-      }),
+  getFormSubmissions: authenticatedProcedure
+    .meta({
+      openapi: {
+        method: "GET",
+        path: getPath("/:id/submissions"),
+        tags: TAGS,
+        summary: "Get the form submissions of a form",
+        protect: true,
+      },
+    })
+    .input(getAllSubmissionsInputModel)
+    .output(getAllFormSubmissionsOutputModel)
+    .query(async ({ ctx }) => {
+      const submissions = await formSubmissionService.getAllFormSubmissions(ctx.user.id);
+      return submissions;
+    }),
+  getFormSubmissionsByFormId: authenticatedProcedure
+    .meta({
+      openapi: {
+        method: "GET",
+        path: getPath("/:id/:formId/submissions"),
+        tags: TAGS,
+        summary: "Get the form submissions of a form",
+        protect: true,
+      },
+    })
+    .input(getAllFormSubmissionsInputModel)
+    .output(getAllFormSubmissionsOutputModel)
+    .query(async ({ ctx, input }) => {
+      const { id: formId } = input;
+      const submissions = await formSubmissionService.getAllFormSubmissionsByFormId(
+        formId,
+        ctx.user.id,
+      );
+      return submissions;
+    }),
+  submitForm: publicProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: getPath("/:id/submit"),
+        tags: TAGS,
+        summary: "Submit a form",
+        protect: false,
+      },
+    })
+    .input(submitFormInputModel)
+    .output(submitFormOutputModel)
+    .mutation(async ({ ctx, input }) => {
+      const { id: formId, submittedData } = input;
+      const { success } = await formSubmissionService.submitFormByUser({
+        formId,
+        userId: ctx.user?.id || null,
+        ip: ctx.ip || "",
+        userAgent: ctx.userAgent || "",
+        submittedData,
+      });
+      return {
+        success,
+      };
+    }),
 });

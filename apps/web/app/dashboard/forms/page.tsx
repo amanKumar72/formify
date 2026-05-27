@@ -1,24 +1,17 @@
 "use client";
 
-import { Calendar, FileText, Loader, PlusCircle } from "lucide-react";
+import { Calendar, FileText, PlusCircle } from "lucide-react";
 import Link from "next/link";
 import { DashboardShell } from "~/components/dashboard-shell";
 import { useGetAllFormSubmissions, useGetMyAllForms } from "~/hooks/api/form";
-import { groupBy } from "~/lib/utils";
 
 const MyForms = () => {
   const { allForms, isLoading } = useGetMyAllForms();
-  const { allSubmissions, isLoading: isSubmissionsLoading } = useGetAllFormSubmissions()
-  console.log(allSubmissions)
-  const groupedSubmissions = groupBy(allSubmissions || [], "formId");
-  console.log(groupedSubmissions)
-  if (isLoading || isSubmissionsLoading) {
-    return <div className="flex items-center justify-center min-h-screen"><Loader className="self-center w-20 h-20  animate-spin" /></div>
-    ;
-  }
-  const getFormSubmissionCount = (formId: string) => {
-    return groupedSubmissions[formId]?.length || 0;
-  }
+  const { allSubmissions } = useGetAllFormSubmissions();
+
+  const getResponseCount = (formId: string) =>
+    allSubmissions?.filter((submission) => submission.formId === formId).length ?? 0;
+
   return (
     <DashboardShell title="My Forms">
       <main className="h-full overflow-y-auto p-6 md:p-8">
@@ -40,40 +33,48 @@ const MyForms = () => {
             </Link>
           </div>
 
-          {allForms?.length ? (
+          {isLoading ? (
+            <div className="mt-8 rounded-xl border border-white/10 bg-white/5 p-8 text-on-surface-variant">
+              Loading forms...
+            </div>
+          ) : allForms?.length ? (
             <section className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-3">
               {allForms.map((form) => (
-                <article key={form.id} className="rounded-xl border border-white/10 bg-white/5 p-5">
+                <Link
+                  key={form.id}
+                  href={`/dashboard/forms/${form.id}`}
+                  className="rounded-xl border border-white/10 bg-white/5 p-5 transition-colors hover:border-primary/50 hover:bg-white/10"
+                >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex size-11 items-center justify-center rounded-lg bg-surface-container">
                       <FileText className="size-5 text-primary" />
                     </div>
                     <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-on-surface-variant">
-                      {form.createdAt ? "Draft" : "Draft"}
+                      Published
                     </span>
                   </div>
                   <h2 className="mt-5 font-heading text-xl font-bold text-foreground">
                     {form.title}
                   </h2>
-                  <p className="mt-2 text-sm leading-6 text-on-surface-variant">
-                    {form.description}
+                  <p className="mt-2 line-clamp-2 text-sm leading-6 text-on-surface-variant">
+                    {form.description || "No description"}
                   </p>
                   <div className="mt-6 flex items-center justify-between border-t border-white/10 pt-4 text-sm text-on-surface-variant">
-                    <span>{getFormSubmissionCount(form.id)} responses</span>
+                    <span>{getResponseCount(form.id)} responses</span>
                     <span className="inline-flex items-center gap-2">
                       <Calendar className="size-4" />
-                      Today
+                      {form.createdAt ? new Date(form.createdAt).toLocaleDateString() : "No date"}
                     </span>
                   </div>
-                </article>
+                </Link>
               ))}
             </section>
           ) : (
-            <div className="w-full mt-8 flex justify-center items-center">No forms found</div>
+            <div className="mt-8 rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-10 text-center">
+              <p className="font-heading text-2xl font-bold text-foreground">No forms yet</p>
+              <p className="mt-2 text-on-surface-variant">Create your first form to see it here.</p>
+            </div>
           )}
-          {isLoading ? (
-            <div className="mt-8 flex justify-center items-center">Loading...</div>
-          ) : null}
         </div>
       </main>
     </DashboardShell>

@@ -14,10 +14,10 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "~/lib/utils";
 
-type FieldType =
+export type FieldType =
   | "text"
   | "number"
   | "email"
@@ -50,7 +50,11 @@ export type FormSnapshot = {
 
 type FormBuilderProps = {
   publishRequest?: number;
-  onPublish:(data:FormSnapshot)=>void
+  previewRequest?: number;
+  initialTitle?: string;
+  initialDescription?: string;
+  initialFields?: BuilderField[];
+  onPublish?: (data: FormSnapshot) => Promise<FormSnapshot | void> | FormSnapshot | void;
 };
 
 const fieldTypes: Array<{
@@ -123,7 +127,7 @@ const fieldDefaults: Record<
   },
 };
 
-const initialFields: BuilderField[] = [
+const initialFieldsFallback: BuilderField[] = [
   {
     id: "field-name",
     type: "text",
@@ -237,12 +241,21 @@ const FieldPreview = ({ field }: { field: BuilderField }) => {
   );
 };
 
-export const FormBuilder = ({ publishRequest = 0, onPublish }: FormBuilderProps) => {
-  const [title, setTitle] = useState("Contact Information");
-  const [description, setDescription] = useState("Please provide your details below.");
-  const [fields, setFields] = useState<BuilderField[]>(initialFields);
-  const [selectedFieldId, setSelectedFieldId] = useState(initialFields[0]?.id ?? "");
-  const [publishedData, setPublishedData] = useState<FormSnapshot | null>(null);
+export const FormBuilder = ({
+  publishRequest = 0,
+  previewRequest = 0,
+  initialTitle = "Contact Information",
+  initialDescription = "Please provide your details below.",
+  initialFields,
+  onPublish,
+}: FormBuilderProps) => {
+  const startingFields = useMemo(() => initialFields ?? initialFieldsFallback, [initialFields]);
+  const [title, setTitle] = useState(initialTitle);
+  const [description, setDescription] = useState(initialDescription);
+  const [fields, setFields] = useState<BuilderField[]>(startingFields);
+  const [selectedFieldId, setSelectedFieldId] = useState(startingFields[0]?.id ?? "");
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const handledPublishRequest = useRef(0);
 
   const sortedFields = useMemo(
     () => [...fields].sort((first, second) => first.order - second.order),
@@ -250,20 +263,57 @@ export const FormBuilder = ({ publishRequest = 0, onPublish }: FormBuilderProps)
   );
   const selectedField = fields.find((field) => field.id === selectedFieldId) ?? fields[0];
 
-  useEffect(() => {
-    if (publishRequest === 0) {
-      return;
-    }
-
-    setPublishedData({
+  const buildSnapshot = useCallback(
+    (): FormSnapshot => ({
       title,
       description,
       fields: sortedFields.map((field) => ({
         ...field,
         labelKey: fieldSlug(field.label),
       })),
-    });
-  }, [description, publishRequest, sortedFields, title]);
+    }),
+    [description, sortedFields, title],
+  );
+
+  useEffect(() => {
+    if (publishRequest === 0 || handledPublishRequest.current === publishRequest) {
+      return;
+    }
+
+    handledPublishRequest.current = publishRequest;
+    const snapshot = buildSnapshot();
+    void Promise.resolve(onPublish?.(snapshot))
+      .then((savedSnapshot) => {
+        if (!savedSnapshot) {
+          return;
+        }
+
+        setTitle(savedSnapshot.title);
+        setDescription(savedSnapshot.description);
+        setFields(savedSnapshot.fields);
+        setSelectedFieldId((currentId) =>
+          savedSnapshot.fields.some((field) => field.id === currentId)
+            ? currentId
+            : (savedSnapshot.fields[0]?.id ?? ""),
+        );
+      })
+      .catch((error) => {
+        console.error("Unable to publish form:", error);
+      });
+  }, [buildSnapshot, onPublish, publishRequest]);
+
+  useEffect(() => {
+    if (previewRequest > 0) {
+      setIsPreviewOpen(true);
+    }
+  }, [previewRequest]);
+
+  useEffect(() => {
+    setTitle(initialTitle);
+    setDescription(initialDescription);
+    setFields(startingFields);
+    setSelectedFieldId(startingFields[0]?.id ?? "");
+  }, [initialDescription, initialTitle, startingFields]);
 
   const addField = (type: FieldType) => {
     const nextOrder = fields.length ? Math.max(...fields.map((field) => field.order)) + 1 : 1;
@@ -350,14 +400,6 @@ export const FormBuilder = ({ publishRequest = 0, onPublish }: FormBuilderProps)
     updateField(fieldId, {
       options: field.options.filter((_, index) => index !== optionIndex),
     });
-  };
-
-  const logPublishedData = () => {
-    if (!publishedData) {
-      return;
-    }
-
-    onPublish(publishedData)
   };
 
   return (
@@ -663,108 +705,43 @@ export const FormBuilder = ({ publishRequest = 0, onPublish }: FormBuilderProps)
         )}
       </aside>
 
-      {publishedData && (
+      {isPreviewOpen && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-md">
-          <section className="flex max-h-[86vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl border border-white/10 bg-surface-container-lowest shadow-2xl">
+          <section className="flex max-h-[86vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-white/10 bg-surface-container-lowest shadow-2xl">
             <div className="flex items-start justify-between gap-4 border-b border-white/10 p-6">
               <div>
-                <p className="font-mono text-xs font-bold uppercase text-primary">
-                  Published Form Data
-                </p>
+                <p className="font-mono text-xs font-bold uppercase text-primary">Form Preview</p>
                 <h2 className="mt-2 font-heading text-2xl font-bold text-foreground">
-                  {publishedData.title || "Untitled Form"}
+                  {title || "Untitled Form"}
                 </h2>
                 <p className="mt-1 text-sm text-on-surface-variant">
-                  {publishedData.fields.length} fields ready to publish
+                  {description || "No description"}
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => setPublishedData(null)}
+                onClick={() => setIsPreviewOpen(false)}
                 className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-white/10 text-on-surface-variant transition-colors hover:text-foreground"
-                aria-label="Close published data"
+                aria-label="Close preview"
               >
                 <X className="size-5" />
               </button>
             </div>
-            <div className="min-h-0 overflow-y-auto p-6">
-              <div className="space-y-4">
-                <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-                  <p className="font-mono text-xs font-bold uppercase text-on-surface-variant">
-                    Title
-                  </p>
-                  <p className="mt-2 text-foreground">{publishedData.title || "Untitled Form"}</p>
+            <div className="min-h-0 space-y-5 overflow-y-auto p-6">
+              {sortedFields.map((field) => (
+                <div key={`preview-${field.id}`}>
+                  <div className="mb-2 flex items-center gap-2">
+                    <label className="font-body text-sm font-semibold text-foreground">
+                      {field.label}
+                    </label>
+                    {field.required && <span className="text-destructive">*</span>}
+                  </div>
+                  {field.description && (
+                    <p className="mb-2 text-sm text-on-surface-variant">{field.description}</p>
+                  )}
+                  <FieldPreview field={field} />
                 </div>
-                <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-                  <p className="font-mono text-xs font-bold uppercase text-on-surface-variant">
-                    Description
-                  </p>
-                  <p className="mt-2 text-foreground">
-                    {publishedData.description || "No description"}
-                  </p>
-                </div>
-                <div className="space-y-3">
-                  {publishedData.fields.map((field) => (
-                    <article
-                      key={field.id}
-                      className="rounded-lg border border-white/10 bg-white/5 p-4"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="font-body font-semibold text-foreground">{field.label}</p>
-                          <p className="mt-1 font-mono text-xs text-on-surface-variant">
-                            {field.labelKey}
-                          </p>
-                        </div>
-                        <span className="rounded-md bg-primary/20 px-2 py-1 font-mono text-xs font-bold uppercase text-primary">
-                          {field.type}
-                        </span>
-                      </div>
-                      <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
-                        <div>
-                          <dt className="text-on-surface-variant">Order</dt>
-                          <dd className="text-foreground">{field.order}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-on-surface-variant">Required</dt>
-                          <dd className="text-foreground">{field.required ? "Yes" : "No"}</dd>
-                        </div>
-                      </dl>
-                      {field.options.length > 0 && (
-                        <div className="mt-3">
-                          <p className="text-sm text-on-surface-variant">Options</p>
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            {field.options.map((option, index) => (
-                              <span
-                                key={`${field.id}-snapshot-${index}`}
-                                className="rounded-full border border-white/10 px-2 py-1 text-xs text-foreground"
-                              >
-                                {option}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </article>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center justify-end gap-3 border-t border-white/10 p-6">
-              <button
-                type="button"
-                onClick={() => setPublishedData(null)}
-                className="rounded-lg border border-white/10 px-4 py-2 font-body text-sm font-semibold text-on-surface-variant transition-colors hover:text-foreground"
-              >
-                Close
-              </button>
-              <button
-                type="button"
-                onClick={logPublishedData}
-                className="rounded-lg bg-primary px-4 py-2 font-body text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90"
-              >
-                Log data to console
-              </button>
+              ))}
             </div>
           </section>
         </div>
