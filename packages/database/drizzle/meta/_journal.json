@@ -15,6 +15,20 @@
       "when": 1779363154081,
       "tag": "0001_flawless_medusa",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779817839219,
+      "tag": "0002_parallel_runaways",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1779854809386,
+      "tag": "0003_mute_havok",
+      "breakpoints": true
     }
   ]
 }
