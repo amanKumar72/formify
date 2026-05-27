@@ -50,9 +50,10 @@ class CloudinaryUploadService {
 
     assertAllowedFile(mimeType, size);
 
+    const resourceType = mimeType === "application/pdf" ? "raw" : "image";
     const uploadResult: UploadApiResponse = await cloudinary.uploader.upload(dataUrl, {
       folder,
-      resource_type: "auto",
+      resource_type: resourceType,
       use_filename: true,
       unique_filename: true,
     });
@@ -62,6 +63,7 @@ class CloudinaryUploadService {
       publicId: uploadResult.public_id,
       resourceType: uploadResult.resource_type,
       originalFilename: uploadResult.original_filename || filename,
+      mimeType,
     };
   }
 }

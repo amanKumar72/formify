@@ -1,7 +1,9 @@
 "use client";
 
+import { CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
 import { FormRenderer } from "~/components/form-renderer";
 import {
@@ -16,6 +18,7 @@ import { toBuilderField } from "~/lib/form-utils";
 const PublicFormPage = () => {
   const params = useParams<{ formId: string }>();
   const formId = params.formId;
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const { form, isLoading: isFormLoading } = useGetFormById(formId);
   const { formFields, isLoading: areFieldsLoading } = useGetFormFields(formId);
   const { submitFormAsync, isPending } = useSubmitForm();
@@ -30,6 +33,7 @@ const PublicFormPage = () => {
       toast.success("Form submitted", {
         position: "top-right",
       });
+      setIsSubmitted(true);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Unable to submit form";
       toast.error(message, {
@@ -55,7 +59,15 @@ const PublicFormPage = () => {
           FormFlow
         </Link>
       </header>
-      {isFormLoading || areFieldsLoading || !form ? (
+      {isSubmitted ? (
+        <section className="mx-auto max-w-2xl rounded-xl border border-white/10 bg-white/5 p-10 text-center">
+          <CheckCircle2 className="mx-auto size-14 text-primary" />
+          <h1 className="mt-5 font-heading text-4xl font-bold text-foreground">Thank you</h1>
+          <p className="mt-3 text-on-surface-variant">
+            Your response has been submitted successfully.
+          </p>
+        </section>
+      ) : isFormLoading || areFieldsLoading || !form ? (
         <div className="mx-auto max-w-3xl rounded-xl border border-white/10 bg-white/5 p-8 text-on-surface-variant">
           Loading form...
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Edit, Share2 } from "lucide-react";
+import { Edit, Inbox, Share2 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
@@ -38,6 +38,13 @@ const FormView = () => {
             <Share2 className="size-5" />
           </button>
           <Link
+            href={`/dashboard/forms/${formId}/submissions`}
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 px-5 py-2 font-body text-sm font-bold text-foreground transition-colors hover:bg-white/5 hover:text-primary"
+          >
+            <Inbox className="size-4" />
+            Submissions
+          </Link>
+          <Link
             href={`/dashboard/forms/${formId}/edit`}
             className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-2 font-body text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90"
           >
@@ -54,10 +61,13 @@ const FormView = () => {
               <p className="text-sm text-on-surface-variant">Fields</p>
               <p className="mt-2 font-heading text-3xl font-bold">{fields.length}</p>
             </article>
-            <article className="rounded-xl border border-white/10 bg-white/5 p-4">
+            <Link
+              href={`/dashboard/forms/${formId}/submissions`}
+              className="rounded-xl border border-white/10 bg-white/5 p-4 transition-colors hover:border-primary/50 hover:bg-white/10"
+            >
               <p className="text-sm text-on-surface-variant">Responses</p>
               <p className="mt-2 font-heading text-3xl font-bold">{allSubmissions?.length ?? 0}</p>
-            </article>
+            </Link>
             <article className="rounded-xl border border-white/10 bg-white/5 p-4">
               <p className="text-sm text-on-surface-variant">Required Fields</p>
               <p className="mt-2 font-heading text-3xl font-bold">

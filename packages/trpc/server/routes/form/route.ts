@@ -399,6 +399,7 @@ export const formRouter = router({
         publicId: uploadedFile.publicId,
         filename: uploadedFile.originalFilename,
         resourceType: uploadedFile.resourceType,
+        mimeType: uploadedFile.mimeType,
       };
     }),
 });

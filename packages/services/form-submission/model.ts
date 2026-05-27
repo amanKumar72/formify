@@ -5,6 +5,7 @@ export const uploadedFileValueModel = z.object({
   publicId: z.string().describe("The Cloudinary public id"),
   filename: z.string().describe("The original filename"),
   resourceType: z.string().describe("The Cloudinary resource type"),
+  mimeType: z.string().optional().describe("The uploaded file MIME type"),
 });
 
 export const submittedFieldValueModel = z.union([z.string(), uploadedFileValueModel]);

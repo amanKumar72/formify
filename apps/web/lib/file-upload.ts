@@ -3,6 +3,7 @@ export type UploadedFileValue = {
   publicId: string;
   filename: string;
   resourceType: string;
+  mimeType?: string;
 };
 
 export type SubmittedFormField = {
