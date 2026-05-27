@@ -54,6 +54,10 @@ class FormSubmissionService {
         const formSubmissions = await this.getFormSubmissions(formId);
         return formSubmissions;
     }
+    public async getAllFormSubmissions(userId: string) {
+        const formSubmissions = await db.select().from(formSubmissionTable).where(eq(formSubmissionTable.userId, userId)).orderBy(desc(formSubmissionTable.createdAt)).execute();
+        return formSubmissions;
+    }
 }
 
 export default FormSubmissionService;

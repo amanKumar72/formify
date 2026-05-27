@@ -133,3 +133,5 @@ export const submitFormInputModel = z.object({
 export const submitFormOutputModel = z.object({
   success: z.boolean().describe("Whether the form submission was submitted successfully"),
 })
+
+export const getAllSubmissionsInputModel = z.undefined()

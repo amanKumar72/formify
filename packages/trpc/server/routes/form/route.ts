@@ -1,7 +1,7 @@
 import { formFieldService, formService, formSubmissionService, userService } from "../../services";
 import { authenticatedProcedure, publicProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
-import { createFormInputModel, createFormOutputModel, deleteFormInputModel, deleteFormOutputModel, getFormFieldsInputModel, getFormFieldsOutputModel, getFormInputModel, getFormOutputModel, updateFormInputModel, updateFormOutputModel, createFormFieldInputModel, createFormFieldOutputModel, updateFormFieldInputModel, updateFormFieldOutputModel, deleteFormFieldInputModel, deleteFormFieldOutputModel, getFormFieldInputModel, getFormFieldOutputModel, getFormFieldTypeOptionsOutputModel, getAllFormSubmissionsInputModel, getAllFormSubmissionsOutputModel, submitFormInputModel, submitFormOutputModel } from "./model";
+import { createFormInputModel, createFormOutputModel, deleteFormInputModel, deleteFormOutputModel, getFormFieldsInputModel, getFormFieldsOutputModel, getFormInputModel, getFormOutputModel, updateFormInputModel, updateFormOutputModel, createFormFieldInputModel, createFormFieldOutputModel, updateFormFieldInputModel, updateFormFieldOutputModel, deleteFormFieldInputModel, deleteFormFieldOutputModel, getFormFieldInputModel, getFormFieldOutputModel, getFormFieldTypeOptionsOutputModel, getAllFormSubmissionsInputModel, getAllFormSubmissionsOutputModel, submitFormInputModel, submitFormOutputModel, getAllSubmissionsInputModel } from "./model";
 
 const TAGS = ["Form"];
 const getPath = generatePath("/form");
@@ -261,6 +261,24 @@ export const formRouter = router({
           protect: true,
         },
       })
+      .input(getAllSubmissionsInputModel)
+      .output(getAllFormSubmissionsOutputModel)
+      .query(
+        async ({ ctx }) => {
+          const submissions = await formSubmissionService.getAllFormSubmissions(ctx.user.id);
+          return submissions;
+        },
+      ),
+    getFormSubmissionsByFormId: authenticatedProcedure
+      .meta({
+        openapi: {
+          method: "GET",
+          path: getPath("/:id/:formId/submissions"),
+          tags: TAGS,
+          summary: "Get the form submissions of a form",
+          protect: true,
+        },
+      })
       .input(getAllFormSubmissionsInputModel)
       .output(getAllFormSubmissionsOutputModel)
       .query(
@@ -277,7 +295,7 @@ export const formRouter = router({
           path: getPath("/:id/submit"),
           tags: TAGS,
           summary: "Submit a form",
-          protect: true,
+          protect: false,
         },
       })
       .input(submitFormInputModel)
