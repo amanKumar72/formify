@@ -107,3 +107,29 @@ export const getFormFieldOutputModel = z.object({
 })
 
 export const getFormFieldTypeOptionsOutputModel = z.array(z.string()).describe("The form field type options")
+
+export const getAllFormSubmissionsInputModel = z.object({
+  id: z.string().describe("The unique identifier of the form"),
+  page: z.number().nullable().default(1).describe("The page number"),
+  pageSize: z.number().nullable().default(10).describe("The page size"),
+})
+export const getAllFormSubmissionsOutputModel = z.array(z.object({
+  id: z.string().describe("The unique identifier of the form submission"),
+  formId: z.string().describe("The unique identifier of the form"),
+  userId: z.string().nullable().describe("The unique identifier of the user"),
+  ip: z.string().describe("The ip of the user"),
+  userAgent: z.string().nullable().describe("The user agent of the user"),
+  submittedData: z.unknown().describe("The submitted data"),
+  createdAt: z.date().nullable().describe("The date and time when the form submission was created"),
+}))
+
+export const submitFormInputModel = z.object({
+  id: z.string().describe("The unique identifier of the form"),
+  submittedData: z.array(z.object({
+    labelKey: z.string().describe("The label key of the field"),
+    value: z.string().describe("The value of the field"),
+  })).describe("The submitted data"),
+})
+export const submitFormOutputModel = z.object({
+  success: z.boolean().describe("Whether the form submission was submitted successfully"),
+})

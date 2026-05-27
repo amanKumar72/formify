@@ -1,7 +1,7 @@
-import { formFieldService, formService, userService } from "../../services";
+import { formFieldService, formService, formSubmissionService, userService } from "../../services";
 import { authenticatedProcedure, publicProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
-import { createFormInputModel, createFormOutputModel, deleteFormInputModel, deleteFormOutputModel, getFormFieldsInputModel, getFormFieldsOutputModel, getFormInputModel, getFormOutputModel, updateFormInputModel, updateFormOutputModel, createFormFieldInputModel, createFormFieldOutputModel, updateFormFieldInputModel, updateFormFieldOutputModel, deleteFormFieldInputModel, deleteFormFieldOutputModel, getFormFieldInputModel, getFormFieldOutputModel, getFormFieldTypeOptionsOutputModel } from "./model";
+import { createFormInputModel, createFormOutputModel, deleteFormInputModel, deleteFormOutputModel, getFormFieldsInputModel, getFormFieldsOutputModel, getFormInputModel, getFormOutputModel, updateFormInputModel, updateFormOutputModel, createFormFieldInputModel, createFormFieldOutputModel, updateFormFieldInputModel, updateFormFieldOutputModel, deleteFormFieldInputModel, deleteFormFieldOutputModel, getFormFieldInputModel, getFormFieldOutputModel, getFormFieldTypeOptionsOutputModel, getAllFormSubmissionsInputModel, getAllFormSubmissionsOutputModel, submitFormInputModel, submitFormOutputModel } from "./model";
 
 const TAGS = ["Form"];
 const getPath = generatePath("/form");
@@ -32,14 +32,14 @@ export const formRouter = router({
         id,
       };
     }),
-  getFormById: authenticatedProcedure
+  getFormById: publicProcedure
     .meta({
       openapi: {
         method: "GET",
         path: getPath("/:id"),
         tags: TAGS,
         summary: "Get the info of a form",
-        protect: true,
+        protect: false,
       },
     })
     .input(getFormInputModel)
@@ -118,14 +118,14 @@ export const formRouter = router({
       const forms = await formService.getMyForms(ctx.user.id);
       return forms;
     }),
-    getFormFields: authenticatedProcedure
+    getFormFields: publicProcedure
     .meta({
       openapi: {
         method: "GET",
         path: getPath("/:id/fields"),
         tags: TAGS,
         summary: "Get the form fields of a form",
-        protect: true,
+        protect: false,
       },
     })
     .input(getFormFieldsInputModel)
@@ -240,10 +240,10 @@ export const formRouter = router({
     .meta({
       openapi: {
         method: "GET",
-        path: getPath("/:id/fields/type-options"),
+        path: getPath("/fields/type-options"),
         tags: TAGS,
         summary: "Get the form field type options",
-        protect: true,
+        protect: false,
       },
     })
     .output(getFormFieldTypeOptionsOutputModel)
@@ -251,4 +251,50 @@ export const formRouter = router({
       const typeOptions = await formFieldService.getFormFieldTypeOptions();
       return typeOptions;
     }),
+    getFormSubmissions: authenticatedProcedure
+      .meta({
+        openapi: {
+          method: "GET",
+          path: getPath("/:id/submissions"),
+          tags: TAGS,
+          summary: "Get the form submissions of a form",
+          protect: true,
+        },
+      })
+      .input(getAllFormSubmissionsInputModel)
+      .output(getAllFormSubmissionsOutputModel)
+      .query(
+        async ({ ctx, input }) => {
+          const { id: formId } = input;
+          const submissions = await formSubmissionService.getAllFormSubmissionsByFormId(formId, ctx.user.id);
+          return submissions;
+        },
+      ),
+      submitForm: publicProcedure
+      .meta({
+        openapi: {
+          method: "POST",
+          path: getPath("/:id/submit"),
+          tags: TAGS,
+          summary: "Submit a form",
+          protect: true,
+        },
+      })
+      .input(submitFormInputModel)
+      .output(submitFormOutputModel)
+      .mutation(async ({ ctx, input }) => {
+        const { id: formId, submittedData } = input;
+        const { success } = await formSubmissionService.submitFormByUser(
+          {
+            formId,
+            userId: ctx.user?.id || null,
+            ip: ctx.ip || "",
+            userAgent: ctx.userAgent || "",
+            submittedData,
+          },
+        );
+        return {
+          success,
+        };
+      }),
 });

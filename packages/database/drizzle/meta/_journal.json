@@ -36,6 +36,20 @@
       "when": 1779867022113,
       "tag": "0004_huge_human_fly",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1779872167221,
+      "tag": "0005_serious_katie_power",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1779874660141,
+      "tag": "0006_plain_bloodstorm",
+      "breakpoints": true
     }
   ]
 }

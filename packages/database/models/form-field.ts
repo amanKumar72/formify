@@ -1,4 +1,4 @@
-import { pgEnum, numeric, pgTable, uuid, varchar, timestamp, boolean, text, integer } from "drizzle-orm/pg-core";
+import { pgEnum, json, pgTable, uuid, varchar, timestamp, boolean, text, integer } from "drizzle-orm/pg-core";
 import { formTable } from "./form";
 
 export const fieldTypeEnum = pgEnum("field_type_enum",{
@@ -18,6 +18,7 @@ export const formFieldTable = pgTable("form_fields", {
   label: varchar("label", { length: 80 }).notNull(),
   labelKey: varchar("label_key", { length: 80 }).notNull(),
   type: fieldTypeEnum("type").notNull(),
+  options: json("options").array().default([]),
   required: boolean("required").default(false),
   placeholder: varchar("placeholder", { length: 80 }),  
   description: varchar("description", { length: 255 }),
